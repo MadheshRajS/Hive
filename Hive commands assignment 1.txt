@@ -1,0 +1,48 @@
+d)
+
+select qtr_id,sum(sales) as minimum_sales from sales_order_data_csv
+group by(qtr_id)
+order by (minimum_sales) asc
+limit 1;
+
+e)
+
+
+select country,min(sales) as minimum_sales
+from sales_order_data_csv
+group by country
+order by minimum_sales asc
+limit 1;
+
+f)
+
+Calculate quartelry sales for each city
+
+select country,sum(sales),qtr_id from sales_order_data_orc
+group by country,qtr_id
+order by qtr_id;
+
+g) Find a month for each year in which maximum number of quantities were sold
+
+SELECT YEAR_ID, MONTH_ID, MAX(QUANTITYORDERED) as MAX_QUANTITY
+FROM sales_order_data_csv GROUP BY YEAR_ID, MONTH_ID 
+ORDER BY YEAR_ID, MAX_QUANTITY DESC,MONTH_ID DESC
+
+
+create database hivedb;
+
+use hivedb;
+
+create table sales_order_data_csv( ORDERNUMBER int, QUANTITYORDERED int, PRICEEACH float, ORDERLINENUMBER int, SALES float, STATUS string, QTR_ID int, MONTH_ID int, YEAR_ID int, PRODUCTLINE string, MSRP int, PRODUCTCODE string, PHONE string, CITY string, STATE string, POSTALCODE string, COUNTRY string, TERRITORY string, CONTACTLASTNAME string, CONTACTFIRSTNAME string, DEALSIZE string ) row format delimited fields terminated by ',' tblproperties("skip.header.line.count"="1") ;
+
+load data inpath '/tmp/sales_order_data.csv' into table sales_order_data_csv;
+
+create table sales_order_data_orc ( ORDERNUMBER int, QUANTITYORDERED int, PRICEEACH float, ORDERLINENUMBER int, SALES float, STATUS string, QTR_ID int, MONTH_ID int, YEAR_ID int, PRODUCTLINE string, MSRP int, PRODUCTCODE string, PHONE string, CITY string, STATE string, POSTALCODE string, COUNTRY string, TERRITORY string, CONTACTLASTNAME string, CONTACTFIRSTNAME string, DEALSIZE string ) stored as orc;
+
+from sales_order_data_csv insert overwrite table sales_order_data_orc select *;
+
+
+SELECT unique YEAR_ID, MONTH_ID, MAX(QUANTITYORDERED) AS MAX_QUANTITY
+FROM sales_order_data_orc
+GROUP BY YEAR_ID, MONTH_ID
+

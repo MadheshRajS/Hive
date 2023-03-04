@@ -1,0 +1,82 @@
+create database hivedb;
+use hivedb;
+
+create table customers(id int ,name string ,age int ,address string ,salary double)
+row format delimited
+fields terminated by ',';
+
+load data local inpath '/config/workspace/customers.csv' into customers;
+
+create table orders(oid int, order_date string,customer_id int ,amount double)
+row format delimited 
+fields terminated by ',';
+
+load data local inpath '/config/workspace/orders.csv' into table orders;
+
+select c.id,c.name,c.address,o.amount from orders o 
+left join customers c 
+on o.customer_id = c.id 
+where o.amount>40;
+
+
+
+
+create table air_quality (
+date_air string,time_air string,co float,
+pt08_s1 int,nmhc int,c6h6 float,pt08_s2 int,
+nox int ,pt08_s3 int,no2 int,pt08_s4 int,
+pt08_s5 int,t float,rh float, ah float)
+row format delimited
+fields terminated by ',';
+
+load data local inpath '' into table air_quality;
+
+set hive.cli.print.header=true;
+select *from air_quality limit 5;
+select date_air,ah,nmhc from air_quality limit 10;
+
+INSERT OVERWRITE LOCAL DIRECTORY '/config/workspace/Output_air_quality' 
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ',' 
+select date_air,ah,nmhc from air_quality limit 10;
+
+select date_air,pt08_s1,pt08_s2,pt08_s3 from air_quality where date_air >'01-01-2004' and date_air <'31-12-2004';
+select date_air,c6h6 from air_quality where date_air regexp '^01';
+
+select pt08_s1 from air_quality where pt08_s1>2000;
+select date_air,pt08_s1,pt08_s2 from air_quality where pt08_s1>2000;
+select avg(rh) as avg_rh from air_quality where avg_rh>200; 
+
+select date_air,pt08_s3 from air_quality sort by pt08_s3 asc;
+
+select distinct(date_air) from air_quality; 
+alter table air_quality add columns (temperature string comment 'temperature of air');
+
+select date_air,pt08_s1 from air_quality
+order by pt08_s1 desc limit 50;
+
+
+select date_air from air_quality where date_air like '2005%'
+
+
+
+
+Download a data from the given location - 
+https://archive.ics.uci.edu/ml/machine-learning-databases/00360/
+
+1. Create a hive table as per given schema in your dataset 
+2. try to place a data into table location
+3. Perform a select operation . 
+4. Fetch the result of the select operation in your local as a csv file . 
+5. Perform group by operation . 
+7. Perform filter operation at least 5 kinds of filter examples . 
+8. show and example of regex operation
+9. alter table operation 
+10 . drop table operation
+12 . order by operation . 
+13 . where clause operations you have to perform . 
+14 . sorting operation you have to perform . 
+15 . distinct operation you have to perform . 
+16 . like an operation you have to perform . 
+17 . union operation you have to perform . 
+18 . table view operation you have to perform . 
