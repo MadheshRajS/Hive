@@ -1,0 +1,161 @@
+create table parking_violations(summons_number int,plate_id string,registration_state string,plate_type string,
+issue_date string,violation_code int,vehicle_body_type string,vehicle_make string,issuing_agency string,
+street_code_1 int,street_code_2 int,street_code_3 int,vehicle_expiration_date int,violation_location string,
+violation_precinct int,issuer_precinct int,issuer_code int,issuer_command string,issuer_squad string,
+violation_time string,time_first_observed string,violation_country string,violation_infront_opposite string,
+house_number string,street_name string,intersecting_street string,date_first_observed int,law_section int,
+sub_division string,violation_legal_code string,days_parking_in_effect string,from_hours_in_effect string,
+to_hours_in_effect string,vehicle_color string,unregistered_vehicle string,vehicle_year int,meter_number string,
+feet_from_curb int,violation_post_code string,violation_description string,stopping_violation string,
+hydrant_violation string,double_parking_violation string)
+row format delimited
+fields terminated by ','
+tblproperties("skip.header.line.count"="1");
+
+load data local inpath '/config/workspace/Parking_Violations_Issued_-_Fiscal_Year_2017.csv' into table parking_violations;
+
+set hive.cli.print.header=true;
+
+1.Select count(summons_number) as tickets from parking_violations;
+
+				or
+
+Select count(summons_number) as tickets from parking_violations 
+where issue_date between '01-01-2007' and '31-12-2007';
+
+2.Find out how many unique states the cars which got parking tickets came from.
+
+select count(distinct registration_state) as unique_states from parking_violations;
+
+3.
+
+select count(summons_number) as dont_have_address from parking_violations
+where street_code_1=0 or street_code_2=0 or street_code_3=0;
+
+4.
+SELECT violation_code, COUNT(*) AS frequency
+FROM parking_violations
+GROUP BY violation_code
+ORDER BY frequency DESC
+LIMIT 5;
+
+5.
+
+SELECT vehicle_body_type,count(*) as vehicle_body,vehicle_make,count(*) as vehicle_body
+FROM parking_violations
+GROUP BY vehicle_body_type,vehicle_make
+ORDER BY vehicle_body_type,vehicle_make desc
+LIMIT 5;
+
+6.
+a)
+SELECT violation_precinct,count(*) as precincts_frequency 
+FROM parking_violations
+GROUP BY violation_precinct
+ORDER BY precincts_frequency DESC
+LIMIT 5;
+
+b)
+SELECT issuer_precinct,count(*) as precincts_frequency 
+FROM parking_violations
+GROUP BY issuer_precinct
+ORDER BY precincts_frequency DESC
+LIMIT 5;
+
+7.
+SELECT violation_precinct, violation_code, COUNT(*) AS frequency
+FROM parking_violations
+WHERE violation_precinct IN (
+  SELECT violation_precinct
+  FROM parking_violations
+  GROUP BY violation_precinct
+  ORDER BY COUNT(*) DESC
+  LIMIT 3
+)
+GROUP BY violation_precinct, violation_code
+ORDER BY violation_precinct, frequency DESC;
+
+8.
+SELECT CONCAT(SUBSTR(violation_time, 1, 2), ':', 
+SUBSTR(violation_time, 3, 2)) AS violation_time_formatted, *
+FROM parking_violations limit 20;
+
+9.
+SELECT time_bin, violation_code, count(*) AS frequency
+FROM (
+  SELECT
+    violation_code,
+    CASE
+      WHEN CAST(SUBSTR(violation_time, 1, 2) AS int) >= 0 AND CAST(SUBSTR(violation_time, 1, 2) AS int) < 4 THEN '00:00-04:00'
+      WHEN CAST(SUBSTR(violation_time, 1, 2) AS int) >= 4 AND CAST(SUBSTR(violation_time, 1, 2) AS int) < 8 THEN '04:00-08:00'
+      WHEN CAST(SUBSTR(violation_time, 1, 2) AS int) >= 8 AND CAST(SUBSTR(violation_time, 1, 2) AS int) < 12 THEN '08:00-12:00'
+      WHEN CAST(SUBSTR(violation_time, 1, 2) AS int) >= 12 AND CAST(SUBSTR(violation_time, 1, 2) AS int) < 16 THEN '12:00-16:00'
+      WHEN CAST(SUBSTR(violation_time, 1, 2) AS int) >= 16 AND CAST(SUBSTR(violation_time, 1, 2) AS int) < 20 THEN '16:00-20:00'
+      ELSE '20:00-00:00'
+    END AS time_bin
+  FROM parking_violations
+) AS time_bins
+GROUP BY time_bin, violation_code
+ORDER BY time_bin, frequency DESC
+LIMIT 18;
+
+10.
+SELECT 
+  CASE 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 4 THEN 'Late Night' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 8 THEN 'Early Morning' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 12 THEN 'Morning' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 16 THEN 'Afternoon' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 20 THEN 'Evening' 
+    ELSE 'Late Evening' 
+  END AS time_bin, 
+  violation_code, 
+  COUNT(*) AS freq 
+FROM parking_violations 
+GROUP BY 
+  CASE 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 4 THEN 'Late Night' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 8 THEN 'Early Morning' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 12 THEN 'Morning' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 16 THEN 'Afternoon' 
+    WHEN CAST(SUBSTR(violation_time, 1, 2) AS INT) < 20 THEN 'Evening' 
+    ELSE 'Late Evening' 
+  END, 
+  violation_code 
+ORDER BY freq DESC 
+LIMIT 3;
+
+11.
+SELECT 
+  CASE 
+    WHEN MONTH(issue_date) IN (3, 4, 5) THEN 'Spring'
+    WHEN MONTH(issue_date) IN (6, 7, 8) THEN 'Summer'
+    WHEN MONTH(issue_date) IN (9, 10, 11) THEN 'Fall'
+    ELSE 'Winter' 
+  END AS season,
+  COUNT(*) AS frequency
+FROM parking_violations
+GROUP BY 
+  CASE 
+    WHEN MONTH(issue_date) IN (3, 4, 5) THEN 'Spring'
+    WHEN MONTH(issue_date) IN (6, 7, 8) THEN 'Summer'
+    WHEN MONTH(issue_date) IN (9, 10, 11) THEN 'Fall'
+    ELSE 'Winter' 
+  END;
+
+12.
+SELECT season, violation_code, COUNT(*) as frequency
+FROM (
+    SELECT 
+        CASE 
+            WHEN MONTH(issue_date) IN (3, 4, 5) THEN 'Spring'
+            WHEN MONTH(issue_date) IN (6, 7, 8) THEN 'Summer'
+            WHEN MONTH(issue_date) IN (9, 10, 11) THEN 'Fall'
+            ELSE 'Winter' 
+        END as season, 
+        violation_code
+    FROM parking_violations
+) as seasonal_violations
+GROUP BY season, violation_code
+ORDER BY season, frequency DESC
+LIMIT 3;
